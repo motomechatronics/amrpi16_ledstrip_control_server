@@ -1,3 +1,15 @@
+
+/*
+ * Name        : amrpi16_ledstrip_control_server.cpp
+ * Author      : Salvatore Volpe
+ * Version     : 1.0
+ * Created on  : Feb 30, 2024
+ *
+ * Copyright © 2024 MOTO Mechatronics
+ * Salvatore Volpe  <salvatore.volpe@mtmt.it>
+ */
+
+
 #include "rclcpp/rclcpp.hpp"
 #include "/home/pi16/ros2_ws/src/amrpi16_ledstrip_control_server/include/amrpi16_ledstrip_control_server/PCA9685.h"
 #include "/home/pi16/ros2_ws/src/amrpi16_ledstrip_control_server/include/amrpi16_ledstrip_control_server/I2C.h"
