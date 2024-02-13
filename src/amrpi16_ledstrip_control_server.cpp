@@ -1,6 +1,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "/home/pi16/ros2_ws/src/amrpi16_ledstrip_control_server/include/amrpi16_ledstrip_control_server/PCA9685.h"
 #include "/home/pi16/ros2_ws/src/amrpi16_ledstrip_control_server/include/amrpi16_ledstrip_control_server/I2C.h"
+#include <thread>
+#include <map>
+#include <vector>
 
 class LedControllerNode : public rclcpp::Node {
 public:
@@ -10,38 +13,66 @@ public:
     // 0x00
   
     LedControllerNode() : Node("led_controller_node"), pca_(8, 0x40) {
-        // Inizializza PCA9685
-        pca_.setPWMFreq(1000); // Imposta la frequenza PWM a 1000Hz
-        pca_.setPWM(1, 0, 0); // Assicura che tutti i LED siano spenti all'avvio
-        timer_ = this->create_wall_timer(std::chrono::milliseconds(500), std::bind(&LedControllerNode::toggleLed, this));
+        // initialization PCA9685
+        pca_.setPWMFreq(60); // set PWM frequency at 60Hz
+        // turn off all pins
+        for (int pin = 0; pin < 13; pin++)
+        {
+            pca_.setPWM(pin, 0, 0);
+        }
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&LedControllerNode::toggleLed, this));
         RCLCPP_INFO(get_logger(), "LedControllerNode initialized.");
+        rgbPinLedStrip[1] = {1, 2, 3};  // pin numbers on Adafruit 16 channel LED driver
+        rgbPinLedStrip[2] = {4, 5, 6};
+        rgbPinLedStrip[3] = {7, 8, 9};
+        rgbPinLedStrip[4] = {10, 11, 12};
    
     }
 
 private:
     PCA9685 pca_;
-    rclcpp::TimerBase::SharedPtr timer_;
-    int led_intensity_ = 0;
-    bool led_state_ = false;
+    rclcpp::TimerBase::SharedPtr timer_;   
+    bool led_state_ = true;
+    int ledIntensity_;
+    std::map<int, std::vector<int>> rgbPinLedStrip;
+       
+    
 
-    void toggleLed() {
-        
-        // Inverti lo stato del LED
-        led_state_ = !led_state_;      
+void testLedColor(int rgbPinLedStrip, int time_ms)
+{
+     for (ledIntensity_= 0; ledIntensity_<= 4095; ledIntensity_ += 10) 
+     {
+        pca_.setPWM(rgbPinLedStrip, 0, ledIntensity_);
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_ms));
+        //RCLCPP_INFO(get_logger(), "LedIntensity1: %d", ledIntensity_);
+     }
 
-        //Imposta l'intensità del LED in base allo stato
-        if (led_state_) {
-            pca_.setPWM(1, led_intensity_,0); // Accendi il LED con l'intensità corrente
-        } else {
-            pca_.setPWM(1, 0, 0); // Spegni il LED
-        }
+    for (ledIntensity_= 4095; ledIntensity_>= 0; ledIntensity_ -= 10) 
+     {
+        pca_.setPWM(rgbPinLedStrip, 0, ledIntensity_);
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_ms));
+        //RCLCPP_INFO(get_logger(), "LedIntensity2: %d", ledIntensity_);
+     }
 
-        // Modifica l'intensità del LED
-        led_intensity_ += 100;
-        if (led_intensity_ > 4095) {
-            led_intensity_ = 0; // Resetta l'intensità al valore minimo quando raggiunge il massimo
-        }
-    }
+     pca_.setPWM(rgbPinLedStrip, 0, 0);
+}
+
+void testLedStrip(int ledStripNumber, int time_ms)
+{
+    testLedColor(rgbPinLedStrip[ledStripNumber][0], time_ms);
+    testLedColor(rgbPinLedStrip[ledStripNumber][1], time_ms);
+    testLedColor(rgbPinLedStrip[ledStripNumber][2], time_ms);
+    testLedColor(rgbPinLedStrip[ledStripNumber][3], time_ms);
+}
+
+void toggleLed() 
+{
+    testLedStrip(1, 1);
+    testLedStrip(2, 1);
+    testLedStrip(3, 1);
+    testLedStrip(4, 1);
+}
+
 };
 
 int main(int argc, char **argv) {
